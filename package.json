@@ -1,0 +1,19 @@
+{
+  "name": "empireofages",
+  "version": "1.0.0",
+  "description": "A socket.io and canvas multiplayer game",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maximforever/empireofages.git"
+  },
+  "author": "Max Pekarsky",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/maximforever/empireofages/issues"
+  },
+  "homepage": "https://github.com/maximforever/empireofages#readme"
+}
