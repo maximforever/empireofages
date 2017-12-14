@@ -4,7 +4,8 @@
   "description": "A socket.io and canvas multiplayer game",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon app.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +16,14 @@
   "bugs": {
     "url": "https://github.com/maximforever/empireofages/issues"
   },
-  "homepage": "https://github.com/maximforever/empireofages#readme"
+  "homepage": "https://github.com/maximforever/empireofages#readme",
+  "dependencies": {
+    "body-parser": "^1.18.2",
+    "connect-mongo": "^2.0.0",
+    "ejs": "^2.5.7",
+    "express": "^4.16.2",
+    "express-session": "^1.15.6",
+    "mongodb": "^3.0.0-rc0",
+    "nodemon": "^1.12.7"
+  }
 }
