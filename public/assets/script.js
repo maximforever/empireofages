@@ -127,11 +127,11 @@ function drawPathToTarget(){
 
         for(var i = 1; i < player.target.length; i++){
             line(player.target[i-1].x, player.target[i-1].y, player.target[i].x, player.target[i].y);
-            circle(player.target[i].x, player.target[i].y, 3, "black", false);
+            //circle(player.target[i].x, player.target[i].y, 3, "black", false);
         }
 
         line(player.x, player.y, player.target[0].x, player.target[0].y);
-        circle(player.target[0].x, player.target[0].y, 3, "black", false);
+        //circle(player.target[0].x, player.target[0].y, 3, "black", false);
 
 }
 
@@ -160,8 +160,16 @@ function updateSpeed(){
 // LISTENERS
 
 
-$("body").on("mousedown", "#canvas", function(){
+$("body").on("mousedown", "#canvas", function(e){
     clicked = true;
+    if(!shiftKey){
+        var newX = e.pageX - $("#canvas").position().left;
+        var newY = e.pageY - $("#canvas").position().top;
+        player.target.push({
+            x: newX,
+            y: newY
+        });
+    }
 });
 
 $("body").on("mouseup", "#canvas", function(){
@@ -215,8 +223,10 @@ $("body").on("keydown", function(e){
     }
 
     if(e.which == 189){
-        player.speed--;
-        console.log(player.speed);
+        if(player.speed > 1){
+            player.speed--;
+            console.log(player.speed);
+        }
     }
 });
 
@@ -272,8 +282,9 @@ function text(text, x, y, size, color, centerAlign){
 
 function line(x1, y1, x2, y2){
     ctx.beginPath();
+    //ctx.globalCompositeOperation = "destination-over";
     ctx.strokeStyle = "black";
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 2;
     ctx.moveTo(x1,y1);
     ctx.lineTo(x2,y2);
     ctx.stroke();
