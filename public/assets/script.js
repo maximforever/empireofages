@@ -1,6 +1,8 @@
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext('2d');
 
+var score = 0;
+
 animationSpeed = 50;
 
 var WIDTH = window.innerWidth/1.5;
@@ -9,14 +11,19 @@ var HEIGHT = window.innerHeight/1.5;
 canvas.width =  WIDTH;
 canvas.height =  HEIGHT;
 
+var foods = [];
+
 var player = {
     x: WIDTH/2,
     y: HEIGHT/2,
-    targetX: this.x,
-    targetY: this.y,
-    speed: 3                    // let's say this means 3px/move
+    size: HEIGHT/75,
+    targetX: WIDTH/2,
+    targetY: HEIGHT/2,
+    speed: HEIGHT/100                    // let's say this means 3px/move
 }
 
+
+console.log(player);
 
 $(document).ready(main);
 
@@ -36,17 +43,35 @@ function draw(){
 
     clear();
 
+    updateScore();
+
     drawBackground();
     drawPlayer();
 
     if (needToMovePlayer()){
+        // drawPathToTarget();
         movePlayer();
+        eat();
     }
 
+    generateFood();
+    drawFood();
 
     var animationCycle = setTimeout(function(){ requestAnimationFrame(draw) }, animationSpeed);
 
 }
+
+// CONSTRUCTORS
+
+    function Food(x, y){
+        this.x = x;
+        this.y = y;
+        this.size = HEIGHT/100;
+        this.alive = true;
+    }
+
+
+// FUNCTIONS
 
 
 function drawBackground(){
@@ -54,11 +79,20 @@ function drawBackground(){
 }
 
 function drawPlayer(){
-    circle(player.x, player.y, 10, "white", false);
+    circle(player.x, player.y, player.size, "white", false);
+}
+
+function drawFood(food){
+    foods.forEach(function(food){
+        if(food.alive){
+            circle(food.x, food.y, food.size, "orange", true)
+        }
+        
+    })
 }
 
 function needToMovePlayer(){
-    return (player.x != player.targetX || playerY != player.TargetY);
+    return (player.x != player.targetX || player.y != player.targetY);
 }
 
 function movePlayer(){
@@ -66,13 +100,50 @@ function movePlayer(){
     var distanceX = player.targetX - player.x;
     var distanceY = player.targetY - player.y;
 
+    var distance = getDistance(player.x, player.y, player.targetX, player.targetY);
+    
+    var deltaX = deltaY = 0;
 
+    if(distance > player.speed){
+        deltaX = distanceX/(distance/player.speed);
+        deltaY = distanceY/(distance/player.speed);
+        player.x += deltaX;
+        player.y += deltaY;
+    } else {
+        player.x = player.targetX;
+        player.y = player.targetY;
+    }
 
+}
 
+function generateFood(){
+    if(Math.random() < 0.01){
+        console.log("Generating food!");
+        var thisFood = new Food(Math.random() * HEIGHT, Math.random() * WIDTH);
+        foods.push(thisFood);
+    }
+}
 
+function drawPathToTarget(){
+    line(player.x, player.y, player.targetX, player.targetY);
+    circle(player.targetX, player.targetY, 3, "black", false);
+}
 
-    player.x += (player.targetX - player.x);
-    player.x += (player.targetX - player.x);
+function eat(){
+
+    foods.forEach(function(food){
+        var distance = getDistance(food.x, food.y, player.x, player.y);
+        if( distance < (player.size + food.size) && food.alive){
+            food.alive = false;
+            score ++;
+            player.size *= 1.1;
+        }
+    })
+
+}
+
+function updateScore(){
+    $("#score").text(score);
 }
 
 
@@ -83,16 +154,34 @@ $("body").on("click", "#canvas", function setPlayerTarget(e){
     var newX = e.pageX - $("#canvas").position().left;
     var newY = e.pageY - $("#canvas").position().top;
 
-    console.log("clicked at " + x + ", " + y);
+    // console.log("clicked at " + newX + ", " + newY);
 
     player.targetX = newX;
     player.targetY = newY;
 
 });
 
+/*
+$("body").on("mousemove", "#canvas", function setPlayerTarget(e){
+
+    if(e.which == 1){
+        var newX = e.pageX - $("#canvas").position().left;
+        var newY = e.pageY - $("#canvas").position().top;
 
 
+        player.targetX = newX;
+        player.targetY = newY;
+    }
+});
 
+$("body").on("mouseup", "#canvas", function setPlayerTarget(e){
+
+    player.targetX = player.x;
+    player.targetY = player.y;
+    
+});
+
+*/
 
 // LIBRARY CODE
 
@@ -107,11 +196,7 @@ function circle(x,y,r, color, stroke) {
     ctx.fillStyle = color;
 
     if(stroke){
-        if(player.powerUps.hyperspeed.active){
-            ctx.strokeStyle = "#F9B600";
-        } else {
-            ctx.strokeStyle = "#0197FF";
-        }
+        ctx.strokeStyle = "gray";
         ctx.lineWidth = 2;
     }
 
@@ -145,7 +230,7 @@ function text(text, x, y, size, color, centerAlign){
 
 function line(x1, y1, x2, y2){
     ctx.beginPath();
-    ctx.strokeStyle = "rgba(250,250,250, 0.4)";
+    ctx.strokeStyle = "black";
     ctx.moveTo(x1,y1);
     ctx.lineTo(x2,y2);
     ctx.stroke();
@@ -154,7 +239,7 @@ function line(x1, y1, x2, y2){
 /* other functions */
 
 function randBetween(min, max){
-    return Math.random() * (max - min) + min;
+    return Math.floor(Math.random() * (max - min) + min);
 }
 
 function getDistance(x1, y1, x2, y2){
