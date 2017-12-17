@@ -13,25 +13,21 @@ canvas.height =  HEIGHT;
 
 var foods = [];
 
+var shiftKey = clicked = false;
+
 var player = {
     x: WIDTH/2,
     y: HEIGHT/2,
     size: HEIGHT/75,
-    targetX: WIDTH/2,
-    targetY: HEIGHT/2,
-    speed: HEIGHT/100                    // let's say this means 3px/move
+    target: [], 
+    speed: Math.floor(HEIGHT/100)                    // let's say this means 3px/move
 }
 
-
-console.log(player);
-
 $(document).ready(main);
-
 
 function main(){
     console.log("Hello world!");
     gameInit();
-
 }
 
 function gameInit(){
@@ -44,12 +40,13 @@ function draw(){
     clear();
 
     updateScore();
+    updateSpeed();
 
     drawBackground();
     drawPlayer();
 
     if (needToMovePlayer()){
-        // drawPathToTarget();
+        drawPathToTarget();
         movePlayer();
         eat();
     }
@@ -92,15 +89,15 @@ function drawFood(food){
 }
 
 function needToMovePlayer(){
-    return (player.x != player.targetX || player.y != player.targetY);
+    return (player.target.length && (player.x != player.target[0].x || player.y != player.target[0].y))
 }
 
 function movePlayer(){
 
-    var distanceX = player.targetX - player.x;
-    var distanceY = player.targetY - player.y;
+    var distanceX = player.target[0].x - player.x;
+    var distanceY = player.target[0].y - player.y;
 
-    var distance = getDistance(player.x, player.y, player.targetX, player.targetY);
+    var distance = getDistance(player.x, player.y, player.target[0].x, player.target[0].y);
     
     var deltaX = deltaY = 0;
 
@@ -110,8 +107,9 @@ function movePlayer(){
         player.x += deltaX;
         player.y += deltaY;
     } else {
-        player.x = player.targetX;
-        player.y = player.targetY;
+        player.x = player.target[0].x;
+        player.y = player.target[0].y;
+        player.target.shift();                   // remove first element of the array - our waypoint
     }
 
 }
@@ -125,8 +123,16 @@ function generateFood(){
 }
 
 function drawPathToTarget(){
-    line(player.x, player.y, player.targetX, player.targetY);
-    circle(player.targetX, player.targetY, 3, "black", false);
+
+
+        for(var i = 1; i < player.target.length; i++){
+            line(player.target[i-1].x, player.target[i-1].y, player.target[i].x, player.target[i].y);
+            circle(player.target[i].x, player.target[i].y, 3, "black", false);
+        }
+
+        line(player.x, player.y, player.target[0].x, player.target[0].y);
+        circle(player.target[0].x, player.target[0].y, 3, "black", false);
+
 }
 
 function eat(){
@@ -146,42 +152,78 @@ function updateScore(){
     $("#score").text(score);
 }
 
+function updateSpeed(){
+    $("#speed").text(player.speed);
+}
+
 
 // LISTENERS
 
-$("body").on("click", "#canvas", function setPlayerTarget(e){
 
-    var newX = e.pageX - $("#canvas").position().left;
-    var newY = e.pageY - $("#canvas").position().top;
-
-    // console.log("clicked at " + newX + ", " + newY);
-
-    player.targetX = newX;
-    player.targetY = newY;
-
+$("body").on("mousedown", "#canvas", function(){
+    clicked = true;
 });
 
-/*
-$("body").on("mousemove", "#canvas", function setPlayerTarget(e){
+$("body").on("mouseup", "#canvas", function(){
+    clicked = false;
+});
 
-    if(e.which == 1){
+$("body").on("mousemove", "#canvas", function(e){
+    if(clicked && !shiftKey){
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
-
-
-        player.targetX = newX;
-        player.targetY = newY;
+        player.target.push({
+            x: newX,
+            y: newY
+        });
     }
 });
 
-$("body").on("mouseup", "#canvas", function setPlayerTarget(e){
 
-    player.targetX = player.x;
-    player.targetY = player.y;
-    
+$("body").on("click", "#canvas", function setPlayerTarget(e){
+
+    if(shiftKey){
+        var newX = e.pageX - $("#canvas").position().left;
+        var newY = e.pageY - $("#canvas").position().top;
+
+        // console.log("clicked at " + newX + ", " + newY);
+
+        player.target.push({
+            x: newX,
+            y: newY
+        });
+    }
+
 });
 
-*/
+$("body").on("keydown", function(e){
+    if(e.which == 16) { 
+        shiftKey = true; 
+    }
+
+    if(e.which == 81){
+        player.target = [];
+    }
+
+    if(e.which == 87){
+        console.log(player.target.length);
+    }
+
+    if(e.which == 187){
+        player.speed++;
+        console.log(player.speed);
+    }
+
+    if(e.which == 189){
+        player.speed--;
+        console.log(player.speed);
+    }
+});
+
+$("body").on("keyup", function(e){
+    if(e.which == 16) { shiftKey = false; }
+});
+
 
 // LIBRARY CODE
 
@@ -196,7 +238,7 @@ function circle(x,y,r, color, stroke) {
     ctx.fillStyle = color;
 
     if(stroke){
-        ctx.strokeStyle = "gray";
+        ctx.strokeStyle = "black";
         ctx.lineWidth = 2;
     }
 
@@ -231,6 +273,7 @@ function text(text, x, y, size, color, centerAlign){
 function line(x1, y1, x2, y2){
     ctx.beginPath();
     ctx.strokeStyle = "black";
+    ctx.lineWidth = 0.5;
     ctx.moveTo(x1,y1);
     ctx.lineTo(x2,y2);
     ctx.stroke();
