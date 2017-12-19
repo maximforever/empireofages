@@ -1,7 +1,11 @@
-body {
+body div{
     color: black;
     font-size: 1.5em;
     font-family: monospace;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid black;
+    display: inline-block;
 }
 
 canvas {
@@ -12,3 +16,7 @@ canvas {
     transform: translate(-50%, -50%);
 }
 
+.instructions{
+    color: #464846;
+    font-size: 1em;
+}

@@ -1,7 +1,9 @@
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext('2d');
 
+var player = 1;
 var score = 0;
+var selectedUnit;
 
 animationSpeed = 50;
 
@@ -14,14 +16,12 @@ canvas.height =  HEIGHT;
 var foods = [];
 
 var shiftKey = clicked = false;
+var unitSelected = false;
+var units = [];
 
-var player = {
-    x: WIDTH/2,
-    y: HEIGHT/2,
-    size: HEIGHT/75,
-    target: [], 
-    speed: Math.floor(HEIGHT/100)                    // let's say this means 3px/move
-}
+
+
+/* */
 
 $(document).ready(main);
 
@@ -31,11 +31,13 @@ function main(){
 }
 
 function gameInit(){
-    draw();
+    var unit = new Unit(WIDTH/2, HEIGHT/2, 10, 1)
+    units.push(unit);
+    gameLoop();
 }
 
 
-function draw(){
+function gameLoop(){
 
     clear();
 
@@ -43,40 +45,97 @@ function draw(){
     updateSpeed();
 
     drawBackground();
-    drawPlayer();
 
-    if (needToMovePlayer()){
-        drawPathToTarget();
-        movePlayer();
-        eat();
-    }
+    drawUnits();
+    moveUnits();
+    unitsEatFood();
 
     generateFood();
     drawFood();
 
-    var animationCycle = setTimeout(function(){ requestAnimationFrame(draw) }, animationSpeed);
+    var animationCycle = setTimeout(function(){ requestAnimationFrame(gameLoop) }, animationSpeed);
 
 }
 
 // CONSTRUCTORS
 
-    function Food(x, y){
-        this.x = x;
-        this.y = y;
-        this.size = HEIGHT/100;
-        this.alive = true;
+function Food(x, y){
+    this.x = x;
+    this.y = y;
+    this.size = HEIGHT/100;
+    this.alive = true;
+}
+
+function Unit(x, y, hp, player){
+    this.id = Math.floor(Math.random()*10000);
+    this.hp = hp;
+    this.player = player;
+    this.x = x;
+    this.y = y;
+    this.size = HEIGHT/75;
+    this.selected = false;
+    this.target = [];
+    this.speed = Math.floor(HEIGHT/100);
+
+    this.drawPathToTarget = function(){
+
+        line(this.x, this.y, this.target[0].x, this.target[0].y);
+        for(var i = 1; i < this.target.length; i++){
+            line(this.target[i-1].x, this.target[i-1].y, this.target[i].x, this.target[i].y);
+        }
+        
     }
+
+    this.move = function(){
+
+        var distanceX = this.target[0].x - this.x;
+        var distanceY = this.target[0].y - this.y;
+
+        var distance = getDistance(this.x, this.y, this.target[0].x, this.target[0].y);
+        
+        var deltaX = deltaY = 0;
+
+        if(distance > this.speed){
+            deltaX = distanceX/(distance/this.speed);
+            deltaY = distanceY/(distance/this.speed);
+            this.x += deltaX;
+            this.y += deltaY;
+        } else {
+            this.x = this.target[0].x;
+            this.y = this.target[0].y;
+            this.target.shift();                   // remove first element of the array - our waypoint
+        }
+
+    }
+
+}
 
 
 // FUNCTIONS
 
 
+function moveUnits(){
+    units.forEach(function(unit){
+        if(unit.hp > 0 && unit.player == player && unit.target.length){
+            unit.drawPathToTarget();
+            unit.move();
+        }
+
+    })
+}
+
 function drawBackground(){
     rect(0 ,0, WIDTH, HEIGHT, "#00FF4D"); 
 }
 
-function drawPlayer(){
-    circle(player.x, player.y, player.size, "white", false);
+function drawUnits(){
+    units.forEach(function(unit){
+        if(unit.hp > 0){
+            var color = "white";
+            if(unit.selected){ color = "blue" }
+            circle(unit.x, unit.y, unit.size, color, false);
+        }
+    })  
 }
 
 function drawFood(food){
@@ -92,28 +151,6 @@ function needToMovePlayer(){
     return (player.target.length && (player.x != player.target[0].x || player.y != player.target[0].y))
 }
 
-function movePlayer(){
-
-    var distanceX = player.target[0].x - player.x;
-    var distanceY = player.target[0].y - player.y;
-
-    var distance = getDistance(player.x, player.y, player.target[0].x, player.target[0].y);
-    
-    var deltaX = deltaY = 0;
-
-    if(distance > player.speed){
-        deltaX = distanceX/(distance/player.speed);
-        deltaY = distanceY/(distance/player.speed);
-        player.x += deltaX;
-        player.y += deltaY;
-    } else {
-        player.x = player.target[0].x;
-        player.y = player.target[0].y;
-        player.target.shift();                   // remove first element of the array - our waypoint
-    }
-
-}
-
 function generateFood(){
     if(Math.random() < 0.01){
         console.log("Generating food!");
@@ -122,30 +159,21 @@ function generateFood(){
     }
 }
 
-function drawPathToTarget(){
 
 
-        for(var i = 1; i < player.target.length; i++){
-            line(player.target[i-1].x, player.target[i-1].y, player.target[i].x, player.target[i].y);
-            //circle(player.target[i].x, player.target[i].y, 3, "black", false);
-        }
+function unitsEatFood(){
 
-        line(player.x, player.y, player.target[0].x, player.target[0].y);
-        //circle(player.target[0].x, player.target[0].y, 3, "black", false);
-
-}
-
-function eat(){
-
-    foods.forEach(function(food){
-        var distance = getDistance(food.x, food.y, player.x, player.y);
-        if( distance < (player.size + food.size) && food.alive){
-            food.alive = false;
-            score ++;
-            player.size *= 1.1;
-        }
+    units.forEach(function(unit){
+        foods.forEach(function(food){
+            var distance = getDistance(food.x, food.y, unit.x, unit.y);
+            if( distance < (unit.size + food.size) && food.alive){
+                food.alive = false;
+                score ++;
+                unit.size *= 1.1;
+            }
+        })
     })
-
+    
 }
 
 function updateScore(){
@@ -156,20 +184,66 @@ function updateSpeed(){
     $("#speed").text(player.speed);
 }
 
+function unselectUnits(){
+    units.forEach(function(unit){
+        unit.selected = false;
+    })
+}
+
+function freezeEverything(){
+    units.forEach(function(unit){
+        unit.target = [];
+    });
+}
+
+function printPathLength(){
+    units.forEach(function(unit){
+        if(unit.selected){
+            console.log(unit.target.length);
+        }
+    });
+}
+
 
 // LISTENERS
 
 
 $("body").on("mousedown", "#canvas", function(e){
-    clicked = true;
-    if(!shiftKey){
+
+    var thisSelectedUnit = false;
+    var clickX = e.pageX - $("#canvas").position().left;
+    var clickY = e.pageY - $("#canvas").position().top;
+
+    units.forEach(function(unit){
+        var distanceToClick = getDistance(unit.x, unit.y, clickX, clickY)
+        if (distanceToClick < unit.size && !unitSelected){
+            thisSelectedUnit = unit;
+            unit.selected = unitSelected = true;
+        } else {
+            unit.selected = unitSelected = false;
+        }
+    });
+
+
+
+    if(thisSelectedUnit){     
+        clicked = true;
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
-        player.target.push({
-            x: newX,
-            y: newY
-        });
-    }
+
+        if(!shiftKey){
+            thisSelectedUnit.target = [{
+                x: newX,
+                y: newY
+            }];
+        } else {
+            thisSelectedUnit.target.push({
+                x: newX,
+                y: newY
+            });
+        }
+    } 
+
 });
 
 $("body").on("mouseup", "#canvas", function(){
@@ -177,32 +251,21 @@ $("body").on("mouseup", "#canvas", function(){
 });
 
 $("body").on("mousemove", "#canvas", function(e){
-    if(clicked && !shiftKey){
-        var newX = e.pageX - $("#canvas").position().left;
-        var newY = e.pageY - $("#canvas").position().top;
-        player.target.push({
-            x: newX,
-            y: newY
+    if(!shiftKey && clicked && unitSelected){  
+        units.forEach(function(unit){
+            if(unit.selected){
+                var newX = e.pageX - $("#canvas").position().left;
+                var newY = e.pageY - $("#canvas").position().top;
+                unit.target.push({
+                    x: newX,
+                    y: newY
+                });
+
+            }
         });
     }
 });
 
-
-$("body").on("click", "#canvas", function setPlayerTarget(e){
-
-    if(shiftKey){
-        var newX = e.pageX - $("#canvas").position().left;
-        var newY = e.pageY - $("#canvas").position().top;
-
-        // console.log("clicked at " + newX + ", " + newY);
-
-        player.target.push({
-            x: newX,
-            y: newY
-        });
-    }
-
-});
 
 $("body").on("keydown", function(e){
     if(e.which == 16) { 
@@ -211,10 +274,13 @@ $("body").on("keydown", function(e){
 
     if(e.which == 81){
         player.target = [];
+        freezeEverything();
     }
 
     if(e.which == 87){
-        console.log(player.target.length);
+        if(unitSelected){
+            printPathLength();
+        }
     }
 
     if(e.which == 187){
