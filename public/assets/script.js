@@ -11,8 +11,8 @@ var selectedUnit = false;
 
 animationSpeed = 50;
 
-var WIDTH = window.innerWidth/1.5;
-var HEIGHT = window.innerHeight/1.5;
+var WIDTH = window.innerWidth*2/3;
+var HEIGHT = window.innerHeight*2/3;
 
 canvas.width =  WIDTH;
 canvas.height =  HEIGHT;
@@ -23,11 +23,33 @@ var shiftKey = clicked = false;
 var units = [];
 
 var playerColors = {
-    1: "white",
+    1: "blue",
     2: "red"
 }
 
+var unitSubsections = {
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    5: [],
+    6: [],
+    7: [],
+    8: [],
+    9: []
+}
 
+var foodSubsections = {
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+    5: [],
+    6: [],
+    7: [],
+    8: [],
+    9: []
+}
 
 // launch game
 $(document).ready(main);
@@ -39,8 +61,12 @@ function main(){
 }
 
 function gameInit(){
-    createUnit(WIDTH/2, HEIGHT/2, 1);
-    createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 2);
+    //createUnit(WIDTH/2, HEIGHT/2, 1);
+    createUnit(10, 10, 1);
+    createUnit(25, 25, 1);
+   /*  createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
+    createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
+    createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);*/
 
     gameLoop();
 }
@@ -55,13 +81,16 @@ function gameLoop(){
 
     clear();
 
-    createKtree();
-
+    createKtree(units);
+    createKtree(foods);
+    createUnitSubsections();
+    createFoodSubsections();
 
     updateScore();
     updateSpeed();
     updateSelection();
-   // displayUnitInfo();
+    displayUnitInfo();
+    //displayFoodInfo();
 
     drawBackground();
 
@@ -79,19 +108,22 @@ function gameLoop(){
 // CONSTRUCTORS
 
 function Food(x, y){
-    this.x = x;
-    this.y = y;
+    this.position = {
+        x: x,
+        y: y,
+        section: 0
+    }
     this.size = HEIGHT/100;
     this.alive = true;
 }
 
-function Unit(x, y, hp, player){
+function Unit(xPos, yPos, hp, player){
     this.id = Math.floor(Math.random()*10000);
     this.hp = hp;
     this.player = player;
     this.position = {
-        x: x,
-        y: y,
+        x: xPos,
+        y: yPos,
         section: 0,
         target: []
     };
@@ -109,18 +141,17 @@ function Unit(x, y, hp, player){
 
     this.draw = function(){
         var color = playerColors[this.player];
-        if(this.selected){ 
-            color = "blue" 
-            if(this.position.target.length){ this.drawPathToTarget() }
-        }
-        
         var healthBarWidth = this.size + 20;
         var healthWidth = this.hp/10*healthBarWidth;
 
         rect(this.position.x - this.size/2 - 10, this.position.y - this.size/2 - 15, healthBarWidth, 5, "red", false);
         rect(this.position.x - this.size/2 - 10, this.position.y - this.size/2 - 15, healthWidth, 5, "green", false);
-        circle(this.position.x, this.position.y, this.size, color, false);
-
+        if(this.selected){ 
+            circle(this.position.x, this.position.y, this.size, "white", true);
+            if(this.position.target.length){ this.drawPathToTarget() }
+        } else {
+            circle(this.position.x, this.position.y, this.size, color, false);
+        }
     }
 
     this.move = function(){
@@ -145,11 +176,11 @@ function Unit(x, y, hp, player){
     }
 
     this.eatFood = function(){
-        if(foods.length){
-            for(var i = 0; i < foods.length; i++){
+        if(foodSubsections[this.position.section].length){
+            for(var i = 0; i < foodSubsections[this.position.section].length; i++){
                 forLoopCount++;
                 var food = foods[i];
-                var distance = getDistance(food.x, food.y, this.position.x, this.position.y);
+                var distance = getDistance(food.position.x, food.position.y, this.position.x, this.position.y);
                 if( distance < (this.size + food.size) && food.alive){
                     food.alive = false;
                     score ++;
@@ -190,7 +221,7 @@ function drawFood(food){
     for(var i = 0; i < foods.length; i++){
         var food = foods[i];
         if(food.alive){
-            circle(food.x, food.y, food.size, "purple", true)
+            circle(food.position.x, food.position.y, food.size, "#C389C8", false)
         } else {
             foods.splice(i, 1)
         }
@@ -209,7 +240,7 @@ function createUnit(x, y, player){
 }
 
 function generateFood(){
-    if(Math.random() < 0.01){
+    if(Math.random() < 0.03){
         console.log("Generating food!");
         var thisFood = new Food(Math.random() * HEIGHT, Math.random() * WIDTH);
         foods.push(thisFood);
@@ -253,6 +284,13 @@ function displayUnitInfo(){
     })
 }
 
+function displayFoodInfo(){
+    $("#foods").empty();
+    foods.forEach(function(food){
+        $("#foods").append(JSON.stringify(food) + "<br><br>")
+    })
+}
+
 function unselectUnits(){
     units.forEach(function(unit){
         unit.selected = false;
@@ -274,14 +312,62 @@ function printPathLength(){
 }
 
 /* collision detection */
-function createKtree(){
-    units.forEach(function(unit){
-        var xSection = unit.position.x%(WIDTH/3);
-        if(xSection > 3) { xSection = 0 }
-        // console.log(unit.id + ": x - " + xSection);
+function createKtree(set){
+    set.forEach(function(element){
+    
+        var section = 1;
+        var xSection = Math.floor(element.position.x/(WIDTH/3)) + 1;
+        var ySection = Math.floor(element.position.y/(HEIGHT/3)) + 1;
+
+        if(xSection == 1){
+            if(ySection == 1){ section = 1}
+            if(ySection == 2){ section = 4}
+            if(ySection == 3){ section = 7}
+        } else if(xSection == 2){
+            if(ySection == 1){ section = 2}
+            if(ySection == 2){ section = 5}
+            if(ySection == 3){ section = 8}
+        } else if(xSection == 3){
+            if(ySection == 1){ section = 3}
+            if(ySection == 2){ section = 6}
+            if(ySection == 3){ section = 9}
+        }
+        //console.log("section: " + section);
+
+        element.position.section = section;
+
     });
 }
 
+function createUnitSubsections(){
+
+    for(var i = 1; i < 10; i++){
+
+        var thisSubsection = [];
+
+        units.forEach(function(unit){
+            if(unit.position.section == i){
+                thisSubsection.push(unit);
+            }
+        });
+        unitSubsections[i] = thisSubsection;
+    }
+}
+
+function createFoodSubsections(){
+
+    for(var i = 1; i < 10; i++){
+
+        var thisSubsection = [];
+
+        foods.forEach(function(food){
+            if(food.position.section == i){
+                thisSubsection.push(food);
+            }
+        });
+        foodSubsections[i] = thisSubsection;
+    }
+}
 
 // LISTENERS
 
@@ -303,13 +389,11 @@ $("body").on("mousedown", "#canvas", function(e){
     
     } else {
         for(var i = 0; i < units.length; i++){
-
             unit = units[i];
             var distanceToClick = getDistance(unit.position.x, unit.position.y, clickX, clickY);
             if(distanceToClick < unit.size && unit.player == player){
                 selectedUnit = unit;
                 unit.selected = true;
-
             } else {
                 unit.selected = false;
             }
@@ -388,6 +472,7 @@ function circle(x,y,r, color, stroke) {
     if(stroke){
         ctx.strokeStyle = "black";
         ctx.lineWidth = 2;
+        ctx.stroke();
     }
 
 
