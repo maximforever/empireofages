@@ -3,7 +3,7 @@ var ctx = canvas.getContext('2d');
 
 var player = 1;
 var score = 0;
-var selectedUnit;
+var selectedUnit = false;
 
 animationSpeed = 50;
 
@@ -83,7 +83,6 @@ function Unit(x, y, hp, player){
         for(var i = 1; i < this.target.length; i++){
             line(this.target[i-1].x, this.target[i-1].y, this.target[i].x, this.target[i].y);
         }
-        
     }
 
     this.move = function(){
@@ -117,9 +116,13 @@ function Unit(x, y, hp, player){
 function moveUnits(){
     units.forEach(function(unit){
         if(unit.hp > 0 && unit.player == player && unit.target.length){
-            unit.drawPathToTarget();
             unit.move();
+            if(unit.selected && unit.target.length){
+                unit.drawPathToTarget();
+            }
         }
+
+
 
     })
 }
@@ -134,6 +137,10 @@ function drawUnits(){
             var color = "white";
             if(unit.selected){ color = "blue" }
             circle(unit.x, unit.y, unit.size, color, false);
+
+/*            if(unit.selected){
+                unit.drawPathToTarget();
+            }*/
         }
     })  
 }
@@ -181,7 +188,11 @@ function updateScore(){
 }
 
 function updateSpeed(){
-    $("#speed").text(player.speed);
+    if(unitSelected){
+        $("#speed").text(unitSelected.speed);
+    } else {
+        $("#speed").text("No unit selected");
+    }
 }
 
 function unselectUnits(){
@@ -200,7 +211,7 @@ function printPathLength(){
     units.forEach(function(unit){
         if(unit.selected){
             console.log(unit.target.length);
-        }
+        }   
     });
 }
 
@@ -210,38 +221,40 @@ function printPathLength(){
 
 $("body").on("mousedown", "#canvas", function(e){
 
-    var thisSelectedUnit = false;
     var clickX = e.pageX - $("#canvas").position().left;
     var clickY = e.pageY - $("#canvas").position().top;
-
-    units.forEach(function(unit){
-        var distanceToClick = getDistance(unit.x, unit.y, clickX, clickY)
-        if (distanceToClick < unit.size && !unitSelected){
-            thisSelectedUnit = unit;
-            unit.selected = unitSelected = true;
-        } else {
-            unit.selected = unitSelected = false;
-        }
-    });
-
-
-
-    if(thisSelectedUnit){     
+    
+    if(selectedUnit && shiftKey){     
         clicked = true;
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
 
         if(!shiftKey){
-            thisSelectedUnit.target = [{
+            selectedUnit.target = [{
                 x: newX,
                 y: newY
             }];
         } else {
-            thisSelectedUnit.target.push({
+            selectedUnit.target.push({
                 x: newX,
                 y: newY
             });
         }
+    } else {
+        console.log("click!");
+        units.forEach(function(unit){
+            var distanceToClick = getDistance(unit.x, unit.y, clickX, clickY)
+            console.log(clickX + ", " + clickY);
+
+
+            if (distanceToClick < unit.size && !unitSelected){
+                selectedUnit = unit;
+                unit.selected = unitSelected = true;
+            } else {
+                selectedUnit = false;
+                unit.selected = unitSelected = false;
+            }
+        });
     } 
 
 });
@@ -251,18 +264,15 @@ $("body").on("mouseup", "#canvas", function(){
 });
 
 $("body").on("mousemove", "#canvas", function(e){
-    if(!shiftKey && clicked && unitSelected){  
-        units.forEach(function(unit){
-            if(unit.selected){
-                var newX = e.pageX - $("#canvas").position().left;
-                var newY = e.pageY - $("#canvas").position().top;
-                unit.target.push({
-                    x: newX,
-                    y: newY
-                });
-
-            }
+    if(shiftKey && clicked && unitSelected){  
+        
+        var newX = e.pageX - $("#canvas").position().left;
+        var newY = e.pageY - $("#canvas").position().top;
+        selectedUnit.target.push({
+            x: newX,
+            y: newY
         });
+
     }
 });
 
@@ -283,15 +293,13 @@ $("body").on("keydown", function(e){
         }
     }
 
-    if(e.which == 187){
-        player.speed++;
-        console.log(player.speed);
+    if(e.which == 187 && unitSelected){
+        unitSelected.speed++;
     }
 
     if(e.which == 189){
-        if(player.speed > 1){
-            player.speed--;
-            console.log(player.speed);
+        if(unitSelected && unitSelected.speed > 1){
+            unitSelected.speed--;
         }
     }
 });
