@@ -1,3 +1,7 @@
+/* TEMP VARS */
+var forLoopCount = 0;
+
+/* GLOBAL VARS */
 var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext('2d');
 
@@ -16,14 +20,18 @@ canvas.height =  HEIGHT;
 var foods = [];
 
 var shiftKey = clicked = false;
-var selectedUnit = false;
 var units = [];
 
+var playerColors = {
+    1: "white",
+    2: "red"
+}
 
 
-/* */
 
+// launch game
 $(document).ready(main);
+    
 
 function main(){
     console.log("Hello world!");
@@ -31,18 +39,29 @@ function main(){
 }
 
 function gameInit(){
-    var unit = new Unit(WIDTH/2, HEIGHT/2, 10, 1)
-    units.push(unit);
+    createUnit(WIDTH/2, HEIGHT/2, 1);
+    createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 2);
+
     gameLoop();
 }
 
-
+// main game loop
 function gameLoop(){
+
+    //console.log(selectedUnit.id);
+    
+    $("#forLoopCount").text(forLoopCount);
+    forLoopCount = 0;
 
     clear();
 
+    createKtree();
+
+
     updateScore();
     updateSpeed();
+    updateSelection();
+   // displayUnitInfo();
 
     drawBackground();
 
@@ -70,41 +89,75 @@ function Unit(x, y, hp, player){
     this.id = Math.floor(Math.random()*10000);
     this.hp = hp;
     this.player = player;
-    this.x = x;
-    this.y = y;
+    this.position = {
+        x: x,
+        y: y,
+        section: 0,
+        target: []
+    };
     this.size = HEIGHT/75;
     this.selected = false;
-    this.target = [];
     this.speed = Math.floor(HEIGHT/100);
 
     this.drawPathToTarget = function(){
 
-        line(this.x, this.y, this.target[0].x, this.target[0].y);
-        for(var i = 1; i < this.target.length; i++){
-            line(this.target[i-1].x, this.target[i-1].y, this.target[i].x, this.target[i].y);
+        line(this.position.x, this.position.y, this.position.target[0].x, this.position.target[0].y);
+        for(var i = 1; i < this.position.target.length; i++){
+            line(this.position.target[i-1].x, this.position.target[i-1].y, this.position.target[i].x, this.position.target[i].y);
         }
+    }
+
+    this.draw = function(){
+        var color = playerColors[this.player];
+        if(this.selected){ 
+            color = "blue" 
+            if(this.position.target.length){ this.drawPathToTarget() }
+        }
+        
+        var healthBarWidth = this.size + 20;
+        var healthWidth = this.hp/10*healthBarWidth;
+
+        rect(this.position.x - this.size/2 - 10, this.position.y - this.size/2 - 15, healthBarWidth, 5, "red", false);
+        rect(this.position.x - this.size/2 - 10, this.position.y - this.size/2 - 15, healthWidth, 5, "green", false);
+        circle(this.position.x, this.position.y, this.size, color, false);
+
     }
 
     this.move = function(){
 
-        var distanceX = this.target[0].x - this.x;
-        var distanceY = this.target[0].y - this.y;
+        var distanceX = this.position.target[0].x - this.position.x;
+        var distanceY = this.position.target[0].y - this.position.y;
 
-        var distance = getDistance(this.x, this.y, this.target[0].x, this.target[0].y);
-        
+        var distance = getDistance(this.position.x, this.position.y, this.position.target[0].x, this.position.target[0].y);        
         var deltaX = deltaY = 0;
 
         if(distance > this.speed){
             deltaX = distanceX/(distance/this.speed);
             deltaY = distanceY/(distance/this.speed);
-            this.x += deltaX;
-            this.y += deltaY;
+            this.position.x += deltaX;
+            this.position.y += deltaY;
         } else {
-            this.x = this.target[0].x;
-            this.y = this.target[0].y;
-            this.target.shift();                   // remove first element of the array - our waypoint
+            this.position.x = this.position.target[0].x;
+            this.position.y = this.position.target[0].y;
+            this.position.target.shift();                   // remove first element of the array - our waypoint
         }
 
+    }
+
+    this.eatFood = function(){
+        if(foods.length){
+            for(var i = 0; i < foods.length; i++){
+                forLoopCount++;
+                var food = foods[i];
+                var distance = getDistance(food.x, food.y, this.position.x, this.position.y);
+                if( distance < (this.size + food.size) && food.alive){
+                    food.alive = false;
+                    score ++;
+                    this.size *= 1.1;
+                }
+            }
+        }
+        
     }
 
 }
@@ -115,15 +168,9 @@ function Unit(x, y, hp, player){
 
 function moveUnits(){
     units.forEach(function(unit){
-        if(unit.hp > 0 && unit.player == player && unit.target.length){
+        if(unit.hp > 0 && unit.position.target.length){
             unit.move();
-            if(unit.selected && unit.target.length){
-                unit.drawPathToTarget();
-            }
         }
-
-
-
     })
 }
 
@@ -134,35 +181,31 @@ function drawBackground(){
 function drawUnits(){
     units.forEach(function(unit){
         if(unit.hp > 0){
-            var color = "white";
-            if(unit.selected){ color = "blue" }
-            
-            var healthBarWidth = unit.size + 20
-            var healthWidth = unit.hp/10*healthBarWidth;
-
-
-            rect(unit.x - unit.size/2 - 10, unit.y - unit.size/2 - 15, healthBarWidth, 5, "red", false);
-            rect(unit.x - unit.size/2 - 10, unit.y - unit.size/2 - 15, healthWidth, 5, "green", false);
-            circle(unit.x, unit.y, unit.size, color, false);
-
-/*            if(unit.selected){
-                unit.drawPathToTarget();
-            }*/
+            unit.draw();
         }
-    })  
-}
-
-function drawFood(food){
-    foods.forEach(function(food){
-        if(food.alive){
-            circle(food.x, food.y, food.size, "orange", true)
-        }
-        
     })
 }
 
+function drawFood(food){
+    for(var i = 0; i < foods.length; i++){
+        var food = foods[i];
+        if(food.alive){
+            circle(food.x, food.y, food.size, "purple", true)
+        } else {
+            foods.splice(i, 1)
+        }
+    }
+        
+}
+
 function needToMovePlayer(){
-    return (player.target.length && (player.x != player.target[0].x || player.y != player.target[0].y))
+    return (player.position.target.length && (player.x != player.position.target[0].x || player.y != player.position.target[0].y))
+}
+
+function createUnit(x, y, player){
+    var unit = new Unit(x,y, 10, player);
+    console.log(unit.id);
+    units.push(unit);
 }
 
 function generateFood(){
@@ -176,16 +219,8 @@ function generateFood(){
 
 
 function unitsEatFood(){
-
     units.forEach(function(unit){
-        foods.forEach(function(food){
-            var distance = getDistance(food.x, food.y, unit.x, unit.y);
-            if( distance < (unit.size + food.size) && food.alive){
-                food.alive = false;
-                score ++;
-                unit.size *= 1.1;
-            }
-        })
+        unit.eatFood();
     })
     
 }
@@ -198,8 +233,24 @@ function updateSpeed(){
     if(selectedUnit){
         $("#speed").text(selectedUnit.speed);
     } else {
-        $("#speed").text("No unit selected");
+        $("#speed").text("Select unit");
     }
+}
+
+function updateSelection(){
+    if(selectedUnit){
+        $("#selected").text(selectedUnit.id);
+    } else {
+        $("#selected").text("Select unit");
+    }
+}
+
+/* delete this later */
+function displayUnitInfo(){
+    $("#units").empty();
+    units.forEach(function(unit){
+        $("#units").append(JSON.stringify(unit) + "<br><br>")
+    })
 }
 
 function unselectUnits(){
@@ -210,15 +261,24 @@ function unselectUnits(){
 
 function freezeEverything(){
     units.forEach(function(unit){
-        unit.target = [];
+        unit.position.target = [];
     });
 }
 
 function printPathLength(){
     units.forEach(function(unit){
         if(unit.selected){
-            console.log(unit.target.length);
+            console.log(unit.position.target.length);
         }   
+    });
+}
+
+/* collision detection */
+function createKtree(){
+    units.forEach(function(unit){
+        var xSection = unit.position.x%(WIDTH/3);
+        if(xSection > 3) { xSection = 0 }
+        // console.log(unit.id + ": x - " + xSection);
     });
 }
 
@@ -236,24 +296,24 @@ $("body").on("mousedown", "#canvas", function(e){
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
 
-        selectedUnit.target.push({
+        selectedUnit.position.target.push({
             x: newX,
             y: newY
         });
     
     } else {
-        console.log("click!");
-        units.forEach(function(unit){
-            var distanceToClick = getDistance(unit.x, unit.y, clickX, clickY)
+        for(var i = 0; i < units.length; i++){
 
-            if (distanceToClick < unit.size && !selectedUnit){
+            unit = units[i];
+            var distanceToClick = getDistance(unit.position.x, unit.position.y, clickX, clickY);
+            if(distanceToClick < unit.size && unit.player == player){
                 selectedUnit = unit;
                 unit.selected = true;
+
             } else {
-                selectedUnit = false;
                 unit.selected = false;
             }
-        });
+        }
     } 
 
 });
@@ -267,7 +327,7 @@ $("body").on("mousemove", "#canvas", function(e){
         
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
-        selectedUnit.target.push({
+        selectedUnit.position.target.push({
             x: newX,
             y: newY
         });
@@ -277,32 +337,31 @@ $("body").on("mousemove", "#canvas", function(e){
 
 
 $("body").on("keydown", function(e){
-    if(e.which == 16) { 
+    if(e.which == 16) {             // SHIFT
         shiftKey = true; 
     }
 
-    if(e.which == 81){
-        player.target = [];
+    if(e.which == 81){              // [Q] key
         freezeEverything();
     }
 
-    if(e.which == 87){
+    if(e.which == 87){              // [W] key
         if(selectedUnit){
             printPathLength();
         }
     }
 
-    if(e.which == 187 && selectedUnit){
+    if(e.which == 187 && selectedUnit){         // [+] key 
         selectedUnit.speed++;
     }
 
-    if(e.which == 189){
-        if(selectedUnit && selectedUnit.speed > 1){
+    if(e.which == 189){                         // [-] key
+        if(selectedUnit && selectedUnit.speed > 1){         
             selectedUnit.speed--;
         }
     }
 
-    if(e.which == 69){
+    if(e.which == 69){                          // [E] key
         if(selectedUnit){
             console.log(selectedUnit);
         }
