@@ -61,10 +61,10 @@ function main(){
 }
 
 function gameInit(){
-    //createUnit(WIDTH/2, HEIGHT/2, 1);
-    createUnit(10, 10, 1);
-    createUnit(25, 25, 2);
-   /*  createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
+    createUnit(WIDTH/2, HEIGHT/2, 1);
+    createUnit(WIDTH/2 + 30, HEIGHT/2 + 30, 1);
+
+    /*createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
     createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
     createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);*/
 
@@ -179,7 +179,7 @@ function Unit(xPos, yPos, hp, player){
         if(foodSubsections[this.position.section].length){
             for(var i = 0; i < foodSubsections[this.position.section].length; i++){
                 forLoopCount++;
-                var food = foods[i];
+                var food = foodSubsections[this.position.section][i];
                 var distance = getDistance(food.position.x, food.position.y, this.position.x, this.position.y);
                 //console.log(this.id + ": " + distance);
                 if( distance < (this.size + food.size) && food.alive){
