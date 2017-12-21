@@ -23,8 +23,8 @@ var shiftKey = clicked = false;
 var units = [];
 
 var playerColors = {
-    1: "blue",
-    2: "red"
+    1: "#10F1FF",
+    2: "#F94375"
 }
 
 var unitSubsections = {
@@ -63,7 +63,7 @@ function main(){
 function gameInit(){
     //createUnit(WIDTH/2, HEIGHT/2, 1);
     createUnit(10, 10, 1);
-    createUnit(25, 25, 1);
+    createUnit(25, 25, 2);
    /*  createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
     createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
     createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);*/
@@ -89,7 +89,7 @@ function gameLoop(){
     updateScore();
     updateSpeed();
     updateSelection();
-    displayUnitInfo();
+    //displayUnitInfo();
     //displayFoodInfo();
 
     drawBackground();
@@ -107,10 +107,10 @@ function gameLoop(){
 
 // CONSTRUCTORS
 
-function Food(x, y){
+function Food(posX, posY){
     this.position = {
-        x: x,
-        y: y,
+        x: posX,
+        y: posY,
         section: 0
     }
     this.size = HEIGHT/100;
@@ -181,6 +181,7 @@ function Unit(xPos, yPos, hp, player){
                 forLoopCount++;
                 var food = foods[i];
                 var distance = getDistance(food.position.x, food.position.y, this.position.x, this.position.y);
+                //console.log(this.id + ": " + distance);
                 if( distance < (this.size + food.size) && food.alive){
                     food.alive = false;
                     score ++;
@@ -206,7 +207,7 @@ function moveUnits(){
 }
 
 function drawBackground(){
-    rect(0 ,0, WIDTH, HEIGHT, "#00FF4D"); 
+    rect(0 ,0, WIDTH, HEIGHT, "#007A24"); 
 }
 
 function drawUnits(){
@@ -221,7 +222,7 @@ function drawFood(food){
     for(var i = 0; i < foods.length; i++){
         var food = foods[i];
         if(food.alive){
-            circle(food.position.x, food.position.y, food.size, "#C389C8", false)
+            circle(food.position.x, food.position.y, food.size, "#C8A300", false)
         } else {
             foods.splice(i, 1)
         }
@@ -240,9 +241,9 @@ function createUnit(x, y, player){
 }
 
 function generateFood(){
-    if(Math.random() < 0.03){
+    if(Math.random() < 0.01){
         console.log("Generating food!");
-        var thisFood = new Food(Math.random() * HEIGHT, Math.random() * WIDTH);
+        var thisFood = new Food(25 +  Math.random() * (WIDTH-25), 25+ Math.random() * (HEIGHT-25));
         foods.push(thisFood);
     }
 }
