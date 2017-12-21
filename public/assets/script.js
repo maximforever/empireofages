@@ -16,7 +16,7 @@ canvas.height =  HEIGHT;
 var foods = [];
 
 var shiftKey = clicked = false;
-var unitSelected = false;
+var selectedUnit = false;
 var units = [];
 
 
@@ -136,6 +136,13 @@ function drawUnits(){
         if(unit.hp > 0){
             var color = "white";
             if(unit.selected){ color = "blue" }
+            
+            var healthBarWidth = unit.size + 20
+            var healthWidth = unit.hp/10*healthBarWidth;
+
+
+            rect(unit.x - unit.size/2 - 10, unit.y - unit.size/2 - 15, healthBarWidth, 5, "red", false);
+            rect(unit.x - unit.size/2 - 10, unit.y - unit.size/2 - 15, healthWidth, 5, "green", false);
             circle(unit.x, unit.y, unit.size, color, false);
 
 /*            if(unit.selected){
@@ -188,8 +195,8 @@ function updateScore(){
 }
 
 function updateSpeed(){
-    if(unitSelected){
-        $("#speed").text(unitSelected.speed);
+    if(selectedUnit){
+        $("#speed").text(selectedUnit.speed);
     } else {
         $("#speed").text("No unit selected");
     }
@@ -229,30 +236,22 @@ $("body").on("mousedown", "#canvas", function(e){
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
 
-        if(!shiftKey){
-            selectedUnit.target = [{
-                x: newX,
-                y: newY
-            }];
-        } else {
-            selectedUnit.target.push({
-                x: newX,
-                y: newY
-            });
-        }
+        selectedUnit.target.push({
+            x: newX,
+            y: newY
+        });
+    
     } else {
         console.log("click!");
         units.forEach(function(unit){
             var distanceToClick = getDistance(unit.x, unit.y, clickX, clickY)
-            console.log(clickX + ", " + clickY);
 
-
-            if (distanceToClick < unit.size && !unitSelected){
+            if (distanceToClick < unit.size && !selectedUnit){
                 selectedUnit = unit;
-                unit.selected = unitSelected = true;
+                unit.selected = true;
             } else {
                 selectedUnit = false;
-                unit.selected = unitSelected = false;
+                unit.selected = false;
             }
         });
     } 
@@ -264,7 +263,7 @@ $("body").on("mouseup", "#canvas", function(){
 });
 
 $("body").on("mousemove", "#canvas", function(e){
-    if(shiftKey && clicked && unitSelected){  
+    if(shiftKey && clicked && selectedUnit){  
         
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
@@ -288,18 +287,24 @@ $("body").on("keydown", function(e){
     }
 
     if(e.which == 87){
-        if(unitSelected){
+        if(selectedUnit){
             printPathLength();
         }
     }
 
-    if(e.which == 187 && unitSelected){
-        unitSelected.speed++;
+    if(e.which == 187 && selectedUnit){
+        selectedUnit.speed++;
     }
 
     if(e.which == 189){
-        if(unitSelected && unitSelected.speed > 1){
-            unitSelected.speed--;
+        if(selectedUnit && selectedUnit.speed > 1){
+            selectedUnit.speed--;
+        }
+    }
+
+    if(e.which == 69){
+        if(selectedUnit){
+            console.log(selectedUnit);
         }
     }
 });
