@@ -1,3 +1,6 @@
+/* SOCKET.IO */
+var socket = io();
+
 /* TEMP VARS */
 var forLoopCount = 0;
 
@@ -22,6 +25,8 @@ var foods = [];
 var shiftKey = zKey = clicked = false,
     units = [],
     buildings = [];
+
+var clearMessage;
 
 var playerColors = {
     1: "#10F1FF",
@@ -106,6 +111,7 @@ function gameLoop(){
     displayControls();
 
     updateGoldCount();
+    updateCurrentPlayer();
     updateSpeed();
     updateSelection();
     //displayUnitInfo();
@@ -346,11 +352,13 @@ function spawnNewUnit(building){
                 console.log("creating untit at " + attemptedX + ", " + attemptedY);
                 unitSpawned = true;
                 gold -= 5;
-                createUnit(attemptedX, attemptedY, player)
+                createUnit(attemptedX, attemptedY, player);
+                message("unit created");
             }
         }
     } else {
         console.log("Not enough gold");
+        message("Not enough gold", "error");
     }
 
 }
@@ -364,6 +372,10 @@ function unitsEatFood(){
 
 function updateGoldCount(){
     $("#gold").text(gold);
+}
+
+function updateCurrentPlayer(){
+    $("#player").text(player);
 }
 
 function updateSpeed(){
@@ -483,11 +495,21 @@ function displayControls(){
     }
 }
 
+function message(text, type){
+    
+    var color = "blue";
+    if(type == "error"){ color = "red" } 
+    $(".message").text(text).css("color", color);
+
+    clearTimeout(clearMessage);
+    clearMessage = setTimeout(function(){
+        $(".message").text("");
+    }, 3000)
+}
+
 // LISTENERS
 
-
 $("body").on("mousedown", "#canvas", function(e){
-
     var clickX = e.pageX - $("#canvas").position().left;
     var clickY = e.pageY - $("#canvas").position().top;
     
@@ -599,6 +621,18 @@ $("body").on("click", "#new-unit", function createNewUnit(){
     }
 });
 
+$("body").on("click", ".player-change", function changeCurrentPlayer(){
+    player = Number(this.dataset.id);
+});
+
+$("body").on("click", "#socket-tester", function testSocketConnection(){
+    socket.emit("current gold", gold);
+
+});
+
+ socket.on('current gold', function(updatedGold){
+  gold = updatedGold;
+});
 
 // LIBRARY CODE
 

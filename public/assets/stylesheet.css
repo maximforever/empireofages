@@ -7,6 +7,17 @@
     border: 1px solid black;
 }
 
+.message{
+    padding: 3px;
+    border: 1px solid gray;
+    margin-bottom: 10px;
+    min-height: calc(1em + 6px);
+    text-align: center;
+    text-transform: uppercase;
+    font-size: 1em;
+    color: blue;
+}
+
 #data, #canvasContainter{
     display: inline-block;
     width: calc(50% - 20px);

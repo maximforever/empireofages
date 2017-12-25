@@ -12,10 +12,12 @@
     </HEAD>
 
     <BODY>
-
+        <div class = "message"></div>
         <div id = "data">
             <div class = "stats">
                 Gold: <span id = "gold"></span>
+                <br>
+                Player: <span id = "player"></span>
                 <br>
                 Selected: <span id = "selected"></span>
                 <br>
@@ -42,6 +44,10 @@
             </div>
             <div class = "controls">
                 <button id = "new-unit">Create a unit</button>
+                <button class = "player-change" data-id = "1">P1</button>
+                <button class = "player-change" data-id = "2">P2</button>
+                <br>
+                <button id = "socket-tester">TEST</button>
             </div>
         </div><!-- 
 
@@ -52,8 +58,9 @@
         
 
 
-
-        <script src= "https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
-        <script type= "text/javascript" src = "/assets/script.js"></script>
+<!--         <script src="/socket.io/socket.io.js"></script> -->
+        <script src="https://cdn.socket.io/socket.io-1.4.0.js"></script>
+        <script src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+        <script type="text/javascript" src = "/assets/script.js"></script>
     </BODY>
 </HTML>

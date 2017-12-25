@@ -1,16 +1,20 @@
 
 /* dependencies */
-const http = require("http");
+
 const fs = require("fs");                               // file system
 const path = require("path");                           // access paths
 const express = require("express");                     // express
-var https = require('https');                           // enable https support
 const MongoClient = require('mongodb').MongoClient;     // talk to mongo
 const bodyParser = require('body-parser');              // parse request body
 var session = require('express-session');               // create sessions
 const MongoStore = require('connect-mongo')(session);   // store sessions in Mongo so we don't get dropped on every server restart
 
 const app = express();
+const http = require("http").Server(app);
+var io  = require('socket.io')(http);
+
+
+
 app.set("port", process.env.PORT || 3000)                        // we're gonna start a server on whatever the environment port is or on 3000
 app.set("views", path.join(__dirname, "/public/views"));        // tells us where our views are
 app.set("view engine", "ejs");                                  // tells us what view engine to use
@@ -71,6 +75,22 @@ MongoClient.connect(dbAddress, function(err, db){
 
 /* ROUTES */
 
+    io.on('connection', function(socket){
+      console.log('a user connected');
+      socket.on('disconnect', function(){
+        console.log('user disconnected');
+      });
+
+      socket.on('current gold', function(gold){
+        console.log('current gold: ' + gold);
+        io.emit('current gold', gold);
+      });
+
+
+    });
+        
+
+
     app.get("/", function(req, res){
         res.render("index");
     });
@@ -88,7 +108,7 @@ MongoClient.connect(dbAddress, function(err, db){
         res.redirect("/");
     });
 
-    app.listen(app.get("port"), function() {
+    http.listen(app.get("port"), function() {
         console.log("Server started on port " + app.get("port"));
     });
 });
