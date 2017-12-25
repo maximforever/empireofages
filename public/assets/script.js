@@ -6,12 +6,12 @@ var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext('2d');
 
 var player = 1;
-var score = 0;
-var selectedUnit = false;
+var gold = 0;
+var selectedUnit = selectedBuilding = false;
 
 animationSpeed = 50;
 
-var WIDTH = window.innerWidth*2/3;
+var WIDTH = window.innerWidth*0.45;
 var HEIGHT = window.innerHeight*2/3;
 
 canvas.width =  WIDTH;
@@ -19,12 +19,28 @@ canvas.height =  HEIGHT;
 
 var foods = [];
 
-var shiftKey = clicked = false;
-var units = [];
+var shiftKey = zKey = clicked = false,
+    units = [],
+    buildings = [];
 
 var playerColors = {
     1: "#10F1FF",
     2: "#F94375"
+}
+
+var buildingSpecs ={
+    barracks: {
+        height: 40,
+        width: 60,
+        hp: 250,
+        color: "gray"
+    },
+    tower: {
+        height: 25,
+        width: 25,
+        hp: 500,
+        color: "orange"
+    }
 }
 
 var unitSubsections = {
@@ -63,6 +79,7 @@ function main(){
 function gameInit(){
     createUnit(WIDTH/2, HEIGHT/2, 1);
     createUnit(WIDTH/2 + 30, HEIGHT/2 + 30, 1);
+    createBuilding(50, 50, "barracks")
 
     /*createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
     createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
@@ -86,7 +103,9 @@ function gameLoop(){
     createUnitSubsections();
     createFoodSubsections();
 
-    updateScore();
+    displayControls();
+
+    updateGoldCount();
     updateSpeed();
     updateSelection();
     //displayUnitInfo();
@@ -97,6 +116,8 @@ function gameLoop(){
     drawUnits();
     moveUnits();
     unitsEatFood();
+
+    drawBuildings();
 
     generateFood();
     drawFood();
@@ -116,6 +137,34 @@ function Food(posX, posY){
     this.size = HEIGHT/100;
     this.alive = true;
 }
+
+function Building(posX, posY, buildingType){
+    this.hp = 100;
+    this.id = Math.floor(Math.random()*10000);
+    this.player = player;
+    this.type = buildingType;
+    this.position = {
+        x: posX,
+        y: posY,
+    }
+    this.height = buildingSpecs[buildingType].height;
+    this.width = buildingSpecs[buildingType].width;
+    this.color = buildingSpecs[buildingType].color;
+    this.hp = buildingSpecs[buildingType].hp;
+    this.queue = [];
+    this.selected = false;
+
+    this.draw = function(){
+        if(this.selected){ 
+            rect(this.position.x, this.position.y, this.width, this.height, "white")
+        } else {
+            rect(this.position.x, this.position.y, this.width, this.height, this.color)
+        }
+    }
+
+
+}
+
 
 function Unit(xPos, yPos, hp, player){
     this.id = Math.floor(Math.random()*10000);
@@ -184,8 +233,7 @@ function Unit(xPos, yPos, hp, player){
                 //console.log(this.id + ": " + distance);
                 if( distance < (this.size + food.size) && food.alive){
                     food.alive = false;
-                    score ++;
-                    this.size *= 1.1;
+                    gold++;
                 }
             }
         }
@@ -218,6 +266,37 @@ function drawUnits(){
     })
 }
 
+function checkForCollision(x, y){
+    var collided = false;
+
+    units.forEach(function(unit){
+        if(!collided){
+            var distance = getDistance(x,y, unit.position.x, unit.position.y);
+            if(distance <= unit.size){
+                collided = true;
+            }
+        }
+    });
+
+    buildings.forEach(function(building){
+        if(!collided){
+            if((x > building.position.x && x < (building.position.x + building.width)) && (y > building.position.y && y < (building.position.y + building.height))){
+                collided = true;
+            }
+        }
+    });
+
+    return collided;
+}
+
+function drawBuildings(){
+    buildings.forEach(function(buildings){
+        if(buildings.hp > 0){
+            buildings.draw();
+        }
+    })
+}
+
 function drawFood(food){
     for(var i = 0; i < foods.length; i++){
         var food = foods[i];
@@ -240,6 +319,11 @@ function createUnit(x, y, player){
     units.push(unit);
 }
 
+function createBuilding(x, y, type){
+    var building = new Building(x,y, type);
+    buildings.push(building);
+}
+
 function generateFood(){
     if(Math.random() < 0.01){
         console.log("Generating food!");
@@ -248,7 +332,28 @@ function generateFood(){
     }
 }
 
+function spawnNewUnit(building){
+    var attemptedX = building.position.x,
+        attemptedY = building.position.y - 20;
 
+    var unitSpawned = false;
+
+    if(gold >= 5){
+        while(!unitSpawned && attemptedX < WIDTH){
+            if(checkForCollision(attemptedX, attemptedY)){
+                attemptedX += 20;
+            } else {
+                console.log("creating untit at " + attemptedX + ", " + attemptedY);
+                unitSpawned = true;
+                gold -= 5;
+                createUnit(attemptedX, attemptedY, player)
+            }
+        }
+    } else {
+        console.log("Not enough gold");
+    }
+
+}
 
 function unitsEatFood(){
     units.forEach(function(unit){
@@ -257,8 +362,8 @@ function unitsEatFood(){
     
 }
 
-function updateScore(){
-    $("#score").text(score);
+function updateGoldCount(){
+    $("#gold").text(gold);
 }
 
 function updateSpeed(){
@@ -370,6 +475,14 @@ function createFoodSubsections(){
     }
 }
 
+function displayControls(){
+    if(selectedBuilding){
+        $("#new-unit").css("display", "block");
+    } else {
+        $("#new-unit").css("display", "none");
+    }
+}
+
 // LISTENERS
 
 
@@ -378,16 +491,22 @@ $("body").on("mousedown", "#canvas", function(e){
     var clickX = e.pageX - $("#canvas").position().left;
     var clickY = e.pageY - $("#canvas").position().top;
     
-    if(selectedUnit && shiftKey){     
+    if(selectedUnit && shiftKey){ 
         clicked = true;
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
 
-        selectedUnit.position.target.push({
-            x: newX,
-            y: newY
-        });
-    
+        if(zKey){
+            selectedUnit.position.target.push({
+                x: newX,
+                y: newY
+            });
+        } else {
+            selectedUnit.position.target = [{
+                x: newX,
+                y: newY
+            }];
+        }
     } else {
         for(var i = 0; i < units.length; i++){
             unit = units[i];
@@ -397,6 +516,17 @@ $("body").on("mousedown", "#canvas", function(e){
                 unit.selected = true;
             } else {
                 unit.selected = false;
+            }
+        }
+
+        for(var i = 0; i < buildings.length; i++){
+            building = buildings[i];
+            if((clickX > building.position.x && clickX < building.position.x + building.width) && (clickY > building.position.y && clickY < building.position.y + building.height)){
+                selectedBuilding = building;
+                building.selected = true;
+            } else {
+                selectedBuilding = false;
+                building.selected = false;
             }
         }
     } 
@@ -409,7 +539,6 @@ $("body").on("mouseup", "#canvas", function(){
 
 $("body").on("mousemove", "#canvas", function(e){
     if(shiftKey && clicked && selectedUnit){  
-        
         var newX = e.pageX - $("#canvas").position().left;
         var newY = e.pageY - $("#canvas").position().top;
         selectedUnit.position.target.push({
@@ -427,7 +556,8 @@ $("body").on("keydown", function(e){
     }
 
     if(e.which == 81){              // [Q] key
-        freezeEverything();
+        selectedUnit.position.target = [];
+        // freezeEverything();
     }
 
     if(e.which == 87){              // [W] key
@@ -451,10 +581,22 @@ $("body").on("keydown", function(e){
             console.log(selectedUnit);
         }
     }
+
+    if(e.which == 90) {             // SHIFT
+        zKey = true; 
+    }
 });
 
 $("body").on("keyup", function(e){
     if(e.which == 16) { shiftKey = false; }
+    if(e.which == 90) { zKey = false; } 
+});
+
+
+$("body").on("click", "#new-unit", function createNewUnit(){
+    if(selectedBuilding){
+        spawnNewUnit(selectedBuilding);
+    }
 });
 
 
