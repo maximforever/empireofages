@@ -86,6 +86,11 @@ MongoClient.connect(dbAddress, function(err, db){
         io.emit('current gold', gold);
       });
 
+      socket.on('update game', function(game){
+        console.log("updating game");
+        io.emit('update game', game);
+      });
+
 
     });
         

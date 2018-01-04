@@ -9,7 +9,7 @@ var canvas = document.getElementById("canvas");
 var ctx = canvas.getContext('2d');
 
 var player = 1;
-var gold = 0;
+var gold = 10;
 var selectedUnit = selectedBuilding = false;
 
 animationSpeed = 50;
@@ -82,8 +82,8 @@ function main(){
 }
 
 function gameInit(){
-    createUnit(WIDTH/2, HEIGHT/2, 1);
-    createUnit(WIDTH/2 + 30, HEIGHT/2 + 30, 1);
+    // createUnit(WIDTH/2, HEIGHT/2, 1);
+    // createUnit(WIDTH/2 + 30, HEIGHT/2 + 30, 1);
     createBuilding(50, 50, "barracks")
 
     /*createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
@@ -128,9 +128,14 @@ function gameLoop(){
     generateFood();
     drawFood();
 
+
+    shareGameLoop();
+
+
     var animationCycle = setTimeout(function(){ requestAnimationFrame(gameLoop) }, animationSpeed);
 
 }
+
 
 // CONSTRUCTORS
 
@@ -251,6 +256,47 @@ function Unit(xPos, yPos, hp, player){
 
 // FUNCTIONS
 
+/* --- GAME LOOP UPDATE ---- */
+
+function shareGameLoop(){
+
+    var gameData = {};
+    var gameUnits = [];
+
+    units.forEach(function(unit){
+        var thisUnit = {
+            id: unit.id,
+            hp: unit.hp, 
+            x: unit.position.x,
+            y: unit.position.y,
+        }
+        gameUnits.push(thisUnit);
+    })
+
+    gameData.units = gameUnits;
+
+    socket.emit("update game", gameData);
+
+}
+
+socket.on("update game", function(updatedGame){
+
+    updatedUnits = updatedGame.units;
+    updatedUnits.forEach(function(newUnitInfo){
+
+        units.forEach(function(oldUnitInfo){
+            if(oldUnitInfo.id == newUnitInfo.id){
+
+                oldUnitInfo.hp = newUnitInfo.hp;
+                oldUnitInfo.position.x = newUnitInfo.x;
+                oldUnitInfo.position.y = newUnitInfo.y;
+
+            }
+        })
+    });
+});
+
+/* -------- */
 
 function moveUnits(){
     units.forEach(function(unit){
@@ -630,7 +676,7 @@ $("body").on("click", "#socket-tester", function testSocketConnection(){
 
 });
 
- socket.on('current gold', function(updatedGold){
+socket.on('current gold', function(updatedGold){
   gold = updatedGold;
 });
 
