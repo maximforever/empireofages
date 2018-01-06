@@ -14,6 +14,14 @@ const http = require("http").Server(app);
 var io  = require('socket.io')(http);
 
 
+var userCount = 0;
+
+
+var gameData = {
+    id: null,
+    units: {}
+}
+
 
 app.set("port", process.env.PORT || 3000)                        // we're gonna start a server on whatever the environment port is or on 3000
 app.set("views", path.join(__dirname, "/public/views"));        // tells us where our views are
@@ -77,8 +85,12 @@ MongoClient.connect(dbAddress, function(err, db){
 
     io.on('connection', function(socket){
       console.log('a user connected');
+      userCount++;
+      console.log("User count is now: " + userCount);
       socket.on('disconnect', function(){
         console.log('user disconnected');
+        userCount--;
+        console.log("User count is now: " + userCount);
       });
 
       socket.on('current gold', function(gold){
@@ -86,9 +98,32 @@ MongoClient.connect(dbAddress, function(err, db){
         io.emit('current gold', gold);
       });
 
-      socket.on('update game', function(game){
+      socket.on('update game', function(incomingGame){
+
+        console.log("incomingGame");
+        console.log(incomingGame);
+        console.log("--");
+
+        for(key in incomingGame.units){
+
+            var unit = incomingGame.units[key];
+            if(gameData.units[unit.id.toString()]){
+                if(unit.hp > 0 ){
+                    gameData.units[unit.id].hp = unit.hp;
+                    gameData.units[unit.id].x = unit.x;
+                    gameData.units[unit.id].y = unit.y;
+                } else {
+                    delete gameData.units[unit.id]
+                }
+            } else {
+                gameData.units[unit.id.toString()] = unit;
+            }
+        };
+
+
         console.log("updating game");
-        io.emit('update game', game);
+       
+        io.emit('update game', gameData);
       });
 
 

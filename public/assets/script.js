@@ -12,7 +12,7 @@ var player = 1;
 var gold = 10;
 var selectedUnit = selectedBuilding = false;
 
-animationSpeed = 50;
+animationSpeed = 20;
 
 var WIDTH = window.innerWidth*0.45;
 var HEIGHT = window.innerHeight*2/3;
@@ -177,8 +177,8 @@ function Building(posX, posY, buildingType){
 }
 
 
-function Unit(xPos, yPos, hp, player){
-    this.id = Math.floor(Math.random()*10000);
+function Unit(xPos, yPos, hp, player, id){
+    this.id = id;
     this.hp = hp;
     this.player = player;
     this.position = {
@@ -248,9 +248,7 @@ function Unit(xPos, yPos, hp, player){
                 }
             }
         }
-        
     }
-
 }
 
 
@@ -261,19 +259,23 @@ function Unit(xPos, yPos, hp, player){
 function shareGameLoop(){
 
     var gameData = {};
-    var gameUnits = [];
+    var gameUnits = {};
 
     units.forEach(function(unit){
         var thisUnit = {
             id: unit.id,
+            player: unit.player,
             hp: unit.hp, 
             x: unit.position.x,
             y: unit.position.y,
         }
-        gameUnits.push(thisUnit);
+        gameUnits[thisUnit.id.toString()] = thisUnit;
     })
 
     gameData.units = gameUnits;
+
+    //console.log("sending:");
+    //console.log(gameData);
 
     socket.emit("update game", gameData);
 
@@ -281,19 +283,43 @@ function shareGameLoop(){
 
 socket.on("update game", function(updatedGame){
 
-    updatedUnits = updatedGame.units;
-    updatedUnits.forEach(function(newUnitInfo){
+    var updatedUnits = updatedGame.units;
+    var currentUnits = units.slice();
 
-        units.forEach(function(oldUnitInfo){
-            if(oldUnitInfo.id == newUnitInfo.id){
+    // check each current unit against incoming units
+    // create copy array of current units, 
 
-                oldUnitInfo.hp = newUnitInfo.hp;
-                oldUnitInfo.position.x = newUnitInfo.x;
-                oldUnitInfo.position.y = newUnitInfo.y;
+    //console.log(updatedGame);
+
+
+    for(key in updatedUnits){
+
+        var foundUnit = false;
+        var updatedUnit = updatedUnits[key];
+        
+
+        for(var i = 0; i < currentUnits.length; i++){
+
+            var currentUnit = currentUnits[i];
+
+            if(currentUnit.id == parseInt(updatedUnit.id)){
+
+                //console.log("updating unit " + updatedUnit.id);
+                foundUnit = true;
+                currentUnit.hp = updatedUnit.hp;
+                currentUnit.position.x = updatedUnit.x;
+                currentUnit.position.y = updatedUnit.y;
 
             }
-        })
-    });
+
+        }
+
+        if(!foundUnit){
+            createUnit(updatedUnit.x, updatedUnit.y, updatedUnit.player, updatedUnit.id);
+        }
+
+    }
+
 });
 
 /* -------- */
@@ -365,8 +391,8 @@ function needToMovePlayer(){
     return (player.position.target.length && (player.x != player.position.target[0].x || player.y != player.position.target[0].y))
 }
 
-function createUnit(x, y, player){
-    var unit = new Unit(x,y, 10, player);
+function createUnit(x, y, player, id){
+    var unit = new Unit(x,y, 10, player, id);
     console.log(unit.id);
     units.push(unit);
 }
@@ -398,7 +424,7 @@ function spawnNewUnit(building){
                 console.log("creating untit at " + attemptedX + ", " + attemptedY);
                 unitSpawned = true;
                 gold -= 5;
-                createUnit(attemptedX, attemptedY, player);
+                createUnit(attemptedX, attemptedY, player, Math.floor(Math.random()*10000));
                 message("unit created");
             }
         }
@@ -551,6 +577,19 @@ function message(text, type){
     clearMessage = setTimeout(function(){
         $(".message").text("");
     }, 3000)
+}
+
+
+
+function deleteUnit(id){
+
+    for(var i = 0; i < units.length; i++){
+        if(unit[i].id == id){
+            unit[i] = null;
+            units.splice(i, 1);
+            console.log("unit deleted");
+        }
+    }
 }
 
 // LISTENERS
