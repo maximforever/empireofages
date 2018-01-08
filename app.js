@@ -14,6 +14,10 @@ const http = require("http").Server(app);
 var io  = require('socket.io')(http);
 
 
+var GameActions  = require('./game.js');
+var game = null;
+
+
 var userCount = 0;
 
 
@@ -23,7 +27,7 @@ var gameData = {
 }
 
 
-app.set("port", process.env.PORT || 3000)                        // we're gonna start a server on whatever the environment port is or on 3000
+app.set("port", process.env.PORT || 3000)                       // we're gonna start a server on whatever the environment port is or on 3000
 app.set("views", path.join(__dirname, "/public/views"));        // tells us where our views are
 app.set("view engine", "ejs");                                  // tells us what view engine to use
 
@@ -84,56 +88,58 @@ MongoClient.connect(dbAddress, function(err, db){
 /* ROUTES */
 
     io.on('connection', function(socket){
-      console.log('a user connected');
-      userCount++;
-      console.log("User count is now: " + userCount);
-      socket.on('disconnect', function(){
-        console.log('user disconnected');
-        userCount--;
+
+        console.log('a user connected');
+        userCount++;
         console.log("User count is now: " + userCount);
-      });
 
-      socket.on('current gold', function(gold){
-        console.log('current gold: ' + gold);
-        io.emit('current gold', gold);
-      });
+        socket.on('disconnect', function(){
+            console.log('user disconnected');
+            userCount--;
+            console.log("User count is now: " + userCount);
+        });
 
-      socket.on('update game', function(incomingGame){
+        if(userCount == 1 && game == null){
+            var game = GameActions.createGame();
+        }
+      
+        socket.on('update game', function(incomingGame){
 
-    /*    console.log("incomingGame");
-        console.log(incomingGame);
-        console.log("--");*/
 
-        for(key in incomingGame.units){
+        /*    console.log("incomingGame");
+            console.log(incomingGame);
+            console.log("--");*/
 
-            var unit = incomingGame.units[key];
-            if(gameData.units[unit.id.toString()]){
-                if(unit.hp > 0 ){
-                    gameData.units[unit.id].hp = unit.hp;
-                    gameData.units[unit.id].x = unit.x;
-                    gameData.units[unit.id].y = unit.y;
+            for(key in incomingGame.units){
+
+                var unit = incomingGame.units[key];
+
+                if(gameData.units[unit.id.toString()]){
+                    if(unit.hp > 0 ){
+                        gameData.units[unit.id].hp = unit.hp;
+                        gameData.units[unit.id].x = unit.x;
+                        gameData.units[unit.id].y = unit.y;
+                    } else {
+                        delete gameData.units[unit.id]
+                    }
                 } else {
-                    delete gameData.units[unit.id]
+                    gameData.units[unit.id.toString()] = unit;
                 }
-            } else {
-                gameData.units[unit.id.toString()] = unit;
-            }
-        };
+            };
 
 
-        //console.log("updating game");
-       
-        io.emit('update game', gameData);
-      });
-
-
+            //console.log("updating game");
+           
+            io.emit('update game', gameData);
+        });
     });
         
 
-
     app.get("/", function(req, res){
-        res.render("index");
-    });
+        res.render("index");   
+    })
+
+
 
 
 

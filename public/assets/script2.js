@@ -83,12 +83,7 @@ function main(){
 
 function gameInit(){
     // createUnit(WIDTH/2, HEIGHT/2, 1);
-    // createUnit(WIDTH/2 + 30, HEIGHT/2 + 30, 1);
-    createBuilding(50, 50, "barracks")
-
-    /*createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
-    createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);
-    createUnit(WIDTH*Math.random(), HEIGHT*Math.random(), 1);*/
+    // createBuilding(50, 50, "barracks")
 
     gameLoop();
 }
@@ -114,8 +109,6 @@ function gameLoop(){
     updateCurrentPlayer();
     updateSpeed();
     updateSelection();
-    //displayUnitInfo();
-    //displayFoodInfo();
 
     drawBackground();
 
@@ -125,8 +118,8 @@ function gameLoop(){
 
     drawBuildings();
 
-    generateFood();
-    drawFood();
+//    generateFood();
+//    drawFood();
 
 
     shareGameLoop();
@@ -255,6 +248,13 @@ function Unit(xPos, yPos, hp, player, id){
 // FUNCTIONS
 
 /* --- GAME LOOP UPDATE ---- */
+
+
+function buildMap(game){
+
+}
+
+
 
 function shareGameLoop(){
 
@@ -393,21 +393,12 @@ function needToMovePlayer(){
 
 function createUnit(x, y, player, id){
     var unit = new Unit(x,y, 10, player, id);
-    console.log(unit.id);
     units.push(unit);
 }
 
 function createBuilding(x, y, type){
     var building = new Building(x,y, type);
     buildings.push(building);
-}
-
-function generateFood(){
-    if(Math.random() < 0.01){
-        console.log("Generating food!");
-        var thisFood = new Food(25 +  Math.random() * (WIDTH-25), 25+ Math.random() * (HEIGHT-25));
-        foods.push(thisFood);
-    }
 }
 
 function spawnNewUnit(building){
