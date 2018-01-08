@@ -100,9 +100,9 @@ MongoClient.connect(dbAddress, function(err, db){
 
       socket.on('update game', function(incomingGame){
 
-        console.log("incomingGame");
+    /*    console.log("incomingGame");
         console.log(incomingGame);
-        console.log("--");
+        console.log("--");*/
 
         for(key in incomingGame.units){
 
@@ -121,7 +121,7 @@ MongoClient.connect(dbAddress, function(err, db){
         };
 
 
-        console.log("updating game");
+        //console.log("updating game");
        
         io.emit('update game', gameData);
       });
